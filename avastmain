@@ -89,6 +89,6 @@ if __name__ == "__main__":
 	dlg = subAvastDialog(app)
 	dlg.show()
 	
-	sys.exit(0)
-	#sys.exit(app.exec_())
+	#sys.exit(0)
+	sys.exit(app.exec_())
 
