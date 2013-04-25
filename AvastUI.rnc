@@ -1,0 +1,27 @@
+#############################################################################
+# 
+# This is the configuration file syntax document
+#
+# Any changes to the configuration file syntax must be made here
+# Run the make command to update the generated schema module
+#
+# Copyright Sarah Addams (c) 2013
+#
+#############################################################################
+
+element configuration 
+{
+	element current
+	{
+		attribute name { text }
+	},
+	element profile
+	{
+		attribute name { text },
+		element path
+		{
+			attribute name { text },
+			attribute action { "stop" | "continue" | "repair" | "delete" }
+		}+
+	}+
+}

@@ -1,0 +1,184 @@
+#!/usr/bin/python3
+
+"""
+Copyright (c) 2013, Sarah Addams All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+Redistributions of source code must retain the above copyright notice, this list
+of conditions and the following disclaimer.
+
+Redistributions in binary form must reproduce the above copyright notice, this 
+list of conditions and the following disclaimer in the documentation and/or 
+other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY 
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and documentation are those 
+of the authors and should not be interpreted as representing official policies, 
+either expressed or implied, of the FreeBSD Project.
+"""
+
+##################################################################################
+#
+#	xml2py
+#
+#	Takes an arbitrary XML file and encodes a python class which encapsulates
+#	and errorchecks the XML data and returns it if valid.
+#
+#	I'm occasionally guilty of over-engineering a thing.
+#
+##################################################################################
+
+from lxml import etree
+import argparse
+import hashlib
+import base64
+import string
+import sys
+import bz2
+import io
+
+if __name__=="__main__":
+	parser = argparse.ArgumentParser(description='Takes an xml file and creates an importable python module with a StringIO data source')
+	
+	try:
+		parser.add_argument('-i', dest='input', type=str, default=None, help='xml input file')
+		parser.add_argument('-o', dest='output', type=str, default=None,  help='python out file')
+		parser.add_argument('-f', dest='force', action='store_true',  help='force output file overwrite')
+		parser.add_argument('-e', dest='encoding', default="utf-8", help="set unicode character encoding (default is utf-8")
+		parser.add_argument('-v', dest='var', type=str, default=None, help='output variable name')
+	except TypeError as e:
+		print("xml2py: problem with the specified arguments - {0:s}".format(e.strerror))
+			
+	args = parser.parse_args()
+	
+	if (args.input == None):
+		print("Input file not specified")
+		sys.exit(1)
+		
+	if (args.output == None):
+		print("Output file not specified")
+		sys.exit(1)
+			
+	if (args.var == None):
+		print("Variable name not specified")
+		sys.exit(1)
+
+	try:
+		xmlI = open(args.input, "rb")
+	except OSError as e:
+		print("Unable to open input file '{0:s}' for reading - {1:s}".format(args.input, e.strerror))
+
+	if (args.output == "-"):
+		O = sys.stdout
+	else:
+		try:
+			if (args.force):
+				O = open(args.output, "wb")
+			else:
+				statbuf = stat(args.output)
+				
+				if (statbuf):
+					print("Pre-existing output file '{0:s}' - use -f to force overwrite".format(args,output))
+					xmlI.close()
+					sys.exit(1)
+				else:
+					O = open(args.output, "wb")
+		except OSError as e:
+			print("Unable to open output file '{0:s}' for writing - {1:s}".format(args.output, e.strerror))
+	
+	print("#########################################################################", file=O)
+	print("#", file=O)
+	print("# This module was auto-generated using the following command line:", file=O)
+	print("#", file=O)
+	print("#   xml2py -i {0:s} -o {1:s} -v {2:s} {3:s}".format(args.input, args.output, args.var, ("-f" if args.force else "")), file=O)
+	print("#", file=O)
+	print("# Modify the input file {0:s} and re-run xml2py if you need to modify it.", file=O)
+	print("#", file=O)
+	print("# Copyright Sarah Addams (c) 2013", file=O)
+	print("#", file=O)
+	print("#########################################################################", file=O)
+	print("", file=O)
+	print("import hashlib", file=O)
+	print("import string", file=O)
+	print("import base64", file=O)	
+	print("import sys", file=O)
+	print("import bz2", file=O)
+	print("import io", file=O)
+	print("", file=O)
+	
+	print("class {0:s}:".format(args.var), file=O)
+	print("\tdef __init__(self):", file=O)
+
+	print("\t\tself.simpleString = \"\"\\", file=O)
+	
+	try:
+		root=etree.parse(xmlI)
+	except:
+		print("xml parse failed - who knows why...")
+		sys.exit(1)
+	
+	M = hashlib.md5()
+	
+	# Returns a binary string
+	xmlArray = etree.tostring(root.getroot())
+	
+	# Compress the string
+	bz2XmlArray = bz2.compress(xmlArray)
+	
+	# Base64 encode the string
+	b64xml = base64.b64encode(bz2XmlArray)
+	
+	# Calculate the digest
+	M.update(b64xml)
+	
+	# Convert the binary string into a (usually) utf-8 str object
+	I=io.StringIO(b64xml.decode(args.encoding))
+	
+	# Save the string as a property of the class we create in the output
+	# file
+	s = I.read(32)
+	l = len(s)
+	while (l):
+		print("\t\t\t+\"{0:s}\"\\".format(s), file=O)
+		s = I.read(32)
+		l = len(s)
+		
+	print("\t\t\t\"\"", file=O)
+	# print("\t\tself.ioString = io.StringIO(self.simpleString)", file=O)
+	print("", file=O)
+	print("\tdef string(self):", file=O)
+	print("\t\tb64Array=self.simpleString.encode(\"{0:s}\")".format(args.encoding), file=O)
+	print("\t\txmlArray=bz2.decompress(base64.b64decode(b64Array))", file=O)
+	print("\t\treturn xmlArray.decode(\"{0:s}\")".format(args.encoding), file=O)
+	print("", file=O)
+	print("\tdef fileObject(self):", file=O)
+	print("\t\tb64Array=self.simpleString.encode(\"{0:s}\")".format(args.encoding), file=O)
+	print("\t\txmlArray=bz2.decompress(base64.b64decode(b64Array))", file=O)
+	print("\t\treturn io.StringIO(xmlArray.decode(\"{0:s}\"))".format(args.encoding), file=O)
+	print("", file=O)
+	print("\tdef selfTest(self):", file=O)
+	print("\t\tM=hashlib.md5()", file=O)
+	print("\t\tb64Array=self.simpleString.encode(\"{0:s}\")".format(args.encoding), file=O)
+	print("\t\tM.update(b64Array)", file=O)
+	print("\t\treturn (M.hexdigest() == \"{0:s}\")".format(M.hexdigest()), file=O)
+	print("", file=O)
+				
+	I.close()
+	if (O != sys.stdout):
+		O.close()
+		print("Output python file '{0:s}' created".format(args.output))
+	
+	sys.exit(0)
+
+	
