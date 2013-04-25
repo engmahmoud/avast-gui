@@ -1,0 +1,6 @@
+<configuration>
+	<current name="default"></current>
+	<profile name="default">
+		<path name="/home" action="continue"></path>
+	</profile>
+</configuration>

@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 
 from lxml import etree
 import AvastUISchema
+import AvastDefault
 import stat
 import sys
 import os
@@ -151,7 +152,9 @@ class engineConfig:
 			xml = F.read()
 			F.close()		
 		except IOError as e:
-			raise ValueError("Can't open configuration file.")
+			# raise ValueError("Can't open configuration file.")
+			P = AvastProfile.configProfile()
+			xml = P.string()
 
 		doc = etree.parse(relaxNGfile)
 		rng = etree.RelaxNG(doc)

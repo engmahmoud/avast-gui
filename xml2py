@@ -33,7 +33,7 @@ either expressed or implied, of the FreeBSD Project.
 #	xml2py
 #
 #	Takes an arbitrary XML file and encodes a python class which encapsulates
-#	and errorchecks the XML data and returns it if valid.
+#	and errorchecks the XML data and returns it if valid.g
 #
 #	I'm occasionally guilty of over-engineering a thing.
 #
@@ -103,7 +103,7 @@ if __name__=="__main__":
 	print("#", file=O)
 	print("#   xml2py -i {0:s} -o {1:s} -v {2:s} {3:s}".format(args.input, args.output, args.var, ("-f" if args.force else "")), file=O)
 	print("#", file=O)
-	print("# Modify the input file {0:s} and re-run xml2py if you need to modify it.", file=O)
+	print("# Modify the input file '{0:s}' and re-run xml2py if you need to modify it.".format(args.input), file=O)
 	print("#", file=O)
 	print("# Copyright Sarah Addams (c) 2013", file=O)
 	print("#", file=O)
