@@ -11,16 +11,22 @@
 
 element configuration 
 {
+	# The name of the current profile (there can be only one)
 	element current
 	{
 		attribute name { text }
 	},
+	# One or more profiles
 	element profile
 	{
+		# profile name (used to key an associative array of profiles in the python code)
 		attribute name { text },
+		# One or more paths per profile - these can be files, folders or block devices
 		element path
 		{
+			# pathname
 			attribute name { text },
+			# action on detecting a virus - for block devices, only 'stop' and 'continue' are respected			
 			attribute action { "stop" | "continue" | "repair" | "delete" }
 		}+
 	}+

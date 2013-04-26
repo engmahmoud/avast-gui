@@ -34,9 +34,51 @@ import sys
 import os
 import io
 
-#############################################################################
+def validate(xml, xmlSchema):
+	if (not xmlSchema.selfTest()):
+		raise ValueError("Syntax description was corrupt - regenerate the module.")
+	
+	# Check the config against the syntax schema from the generated schema class
+	relaxNGfile = xmlSchema.fileObject()
+		
+	doc = etree.parse(relaxNGfile)
+	rng = etree.RelaxNG(doc)
+	config = etree.parse(io.StringIO(xml))
+		
+	return rng.validate(config)
+
+
 #
 #	This class handles the configuration data for the program
+#
+#	CONFIGURATION STORAGE
+#	=====================
+#
+#	The class employs xml for storage, syntax checking the data against 
+#	a RelaxNG compact syntax specification in the file AvastUI.rnc.
+#
+#	The RelaxNG syntax spec is run through trang to generate an XML doc, 
+#	thence through xml2py, which serielises it and stores it as a python 
+#	class. The class is subsequently available as a module import.
+#
+#	The default configuration is also stored as a python module.
+#
+#	See the makefile and xml2py for details of this process.
+#
+#	CONFIGURATION DATA STRUCTURES
+#	=============================
+#
+#	engineConfig maintains the data read from a configuration file in two
+#	member variables: 'XP.current' and 'XP.profile'. The 'current' variable
+#	is a simple string naming the current profile.
+#
+#	The 'profile' variable is an associative array of profiles indexed by 
+#	the profile name. 
+#
+#	Each profile maintains a numerically indexable list of paths.
+#
+# 	Each path has three attributes - type, name and action indexed 
+#	by 'type'|'name' or 'action'. 
 #
 #############################################################################
 class engineConfig:
@@ -125,9 +167,24 @@ class engineConfig:
 			# print("close called")
 			pass
 	
+	# Return the current profile
 	def currentProfile(self):
-		return self.XP.currentProfile
-		
+		# (if it exists)
+		if (self.XP.profile[self.XP.currentProfile]):
+			return self.XP.currentProfile
+		else:
+			# elsewise the default if that exists
+			if (self.XP.profile['default']):
+				self.XP.currentProfile = "default"
+				return self.XP.currentProfile
+			else:
+				# Elsewise the key of the first profile in the array
+				for K in self.XP.profile.keys():
+					self.XP.currentProfile = K
+					return K
+		# else nar-theeng (should never happen)
+		return None
+			
 	def getProfileList(self):
 		return self.XP.profile
 	
@@ -140,28 +197,28 @@ class engineConfig:
 	def getPathCount(self, profileName):
 		return len(self.XP.profile[profileName])
 	
+	def store(self, path):
+		pass
+	
 	def load(self, path):
-		self.xmlSchema = AvastUISchema.configXMLSchema()
-		if (not self.xmlSchema.selfTest()):
-			raise ValueError("Configuration syntax description is corrupt - regenerate it")
+		xmlSchema = AvastUISchema.configXMLSchema()
 		
-		# Check the config against the syntax schema from the generated schema class
-		relaxNGfile = self.xmlSchema.fileObject()
+		# Try to open a config file. If we can't open a config file, we use the default
 		try:
 			F = open(path+"/AvastUI.xml", "r")
 			xml = F.read()
 			F.close()		
+			src = ".avastui/AvastUI.xml"
 		except IOError as e:
-			# raise ValueError("Can't open configuration file.")
-			P = AvastProfile.configProfile()
+			P = AvastProfile.configDefault()
+			if (not P.selfTest()):
+				raise ValueError("Module-sourced default config is corrupt - regenerate it.")
+			src = "module-based default"
 			xml = P.string()
 
-		doc = etree.parse(relaxNGfile)
-		rng = etree.RelaxNG(doc)
-		config = etree.parse(io.StringIO(xml))
-
-		if (not rng.validate(config)):
-			raise ValueError("Can't validate configuration file.")
+		# Either way, we end up with an xml configuration that we need to syntax check
+		if (not validate(xml, xmlSchema)):
+			raise ValueError("Configuration file ({0:s})failed syntax check.".format(src))
 
 		self.isvalid = True
 		

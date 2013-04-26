@@ -1,7 +1,7 @@
-all: AvastUISchema.py AvastUI.py AvastDefault.py
+all: AvastUISchema.py AvastUI.py AvastDefault.py AvastAdmin.py AvastLog.py
 
 clean:
-	rm -f AvastUISchema.py AvastUI.py AvastDefault.py
+	rm -f AvastUISchema.py AvastUI.py AvastDefault.py AvastAdmin.py AvastLog.py
 
 #############################################################
 #
@@ -33,6 +33,12 @@ AvastUISchema.py: AvastUI.rnc xml2py
 
 AvastUI.py: Avast.ui
 	pyuic4 Avast.ui -o AvastUI.py
+	
+AvastAdmin.py: AvastAdmin.ui
+	pyuic4 AvastAdmin.ui -o AvastAdmin.py
+
+AvastLog.py: AvastLog.ui
+	pyuic4 AvastLog.ui -o AvastLog.py
 
 #############################################################
 #

@@ -32,6 +32,8 @@ either expressed or implied, of the FreeBSD Project.
 from AvastConfig import engineConfig
 from PyQt4 import QtCore, QtGui
 import AvastEngine
+import AvastAdmin
+import AvastLog
 import AvastUI
 import sys
 import os
@@ -44,16 +46,55 @@ except AttributeError:
 	def _translate(context, text, disambig):
 		return QtGui.QApplication.translate(context, text, disambig)
 
+class subAdminDialog(QtGui.QDialog, AvastAdmin.Ui_AdminDialog):
+	def actionClose(self, e):
+		self.done(0)
+		
+	def __init__(self, parent):
+		self.m_parent = parent
+		QtGui.QDialog.__init__(self, parent)
+		# Set up the user interface from Designer.
+		self.setupUi(self)
+		# Connect up the buttons.
+		self.pushButtonClose.clicked.connect(self.actionClose)
+		# Something else
+
+class subLogViewDialog(QtGui.QDialog, AvastLog.Ui_LogViewDialog):
+	def actionClose(self, e):
+		self.done(0)
+		
+	def __init__(self, parent):
+		self.m_parent = parent
+		QtGui.QDialog.__init__(self, parent)
+		# Set up the user interface from Designer.
+		self.setupUi(self)
+		# Connect up the buttons.
+		self.pushButtonClose.clicked.connect(self.actionClose)
+		# Something else
+			
 class subAvastDialog(QtGui.QDialog, AvastUI.Ui_AvastDialog):
+	def actionAdminDlg(self, e):
+		dlg = subAdminDialog(self)
+		dlg.show()
+		dlg.exec_()
+	
+	def actionLogViewDlg(self, e):
+		dlg = subLogViewDialog(self)
+		dlg.show()
+		dlg.exec_()
+		
+		
 	def actionTidyExit(self, e):
 		# sys.exit(self.m_app.exec_())
 		sys.exit(0)
 		
 	def actionStop(self, e):
-		self.pushButtonStartPause.setText(_translate("AvastDialog", "Start", None))		
+		self.pushButtonStartPause.setText(_translate("AvastDialog", "Start", None))
+		self.pushButtonAdmin.setEnabled(True)
 		self.buttonToggle=False
 		
 	def actionToggleStartPause(self, e):
+		self.pushButtonAdmin.setEnabled(False)
 		if (self.buttonToggle):
 			self.pushButtonStartPause.setText(_translate("AvastDialog", "Start", None))		
 			self.buttonToggle=False
@@ -69,14 +110,22 @@ class subAvastDialog(QtGui.QDialog, AvastUI.Ui_AvastDialog):
 		QtGui.QDialog.__init__(self)
 		# Set up the user interface from Designer.
 		self.setupUi(self)
+		
+		# Start state for some controls
+		self.pushButtonAdmin.setEnabled(True)
+		
 		# Connect up the buttons.
 		self.pushButtonExit.clicked.connect(self.actionTidyExit)
 		self.pushButtonStartPause.clicked.connect(self.actionToggleStartPause)
 		self.pushButtonStop.clicked.connect(self.actionStop)
+		self.pushButtonAdmin.clicked.connect(self.actionAdminDlg)
+		self.pushButtonLogView.clicked.connect(self.actionLogViewDlg)
 		
 if __name__ == "__main__":
 	
 	app = QtGui.QApplication(sys.argv)
+	
+	# Get the scanner's configuration via the engineConfig class
 	cfg = engineConfig()	
 	if (not cfg.valid()):
 		print("Configuration is invalid... o woe...")

@@ -7,8 +7,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>659</width>
-    <height>575</height>
+    <width>640</width>
+    <height>480</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -349,7 +349,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButtonProfile">
+       <widget class="QPushButton" name="pushButtonAdmin">
         <property name="minimumSize">
          <size>
           <width>100</width>
@@ -366,7 +366,7 @@
          <string>Open the log file viewer (scan continues while you view the log)...</string>
         </property>
         <property name="text">
-         <string>Profile</string>
+         <string>Admin</string>
         </property>
        </widget>
       </item>
